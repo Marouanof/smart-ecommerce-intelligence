@@ -292,7 +292,7 @@ def generate_llm_summary(df: pd.DataFrame, df_topk: pd.DataFrame) -> str:
 **Analyse du catalogue :**
 - {n_products} produits analyses
 - Score composite moyen : {df['composite_score'].mean():.3f}
-- Prix moyen : {avg_price:.2f} {df['currency'].iloc[0] if 'currency' in df.columns else 'EUR'}
+- Prix moyen : {avg_price:.2f} {df['currency'].iloc[0] if 'currency' in df.columns and not df.empty else 'EUR'}
 - Note moyenne : {avg_rating:.2f}/5
 """
 
