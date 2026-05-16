@@ -220,13 +220,13 @@ HUGGINGFACE_TOKEN=hf_votre_token
 
 ## 💻 Utilisation
 
-### 🧪 Générer les données brutes (optionnel)
+### 🧪 Scraper les données brutes (optionnel)
 
-Des données sont déjà fournies dans `data/raw/`. Pour en regénérer :
+Des données sont déjà fournies dans `data/raw/`. Pour rescraper :
 
 ```powershell
-python -m scrapers.run_shopify       # Scraper réel Shopify
-python -m scrapers.generate_demo      # Données WooCommerce fictives
+python -m scrapers.run_shopify            # Scraper réel Shopify
+python -m scrapers.scrape_woocommerce_demo # Données WooCommerce de démo
 ```
 
 ### ▶️ Exécuter le pipeline ML complet
@@ -292,7 +292,7 @@ python kfp_pipeline.py     # Génère kfp_pipeline.yaml
 │   ├── 📄 woocommerce.py           → Scraper WooCommerce
 │   ├── 📄 orchestrator.py          → Détection plateforme + orchestration
 │   ├── 📄 run_shopify.py           → Lanceur scraping en masse
-│   └── 📄 generate_demo.py         → Générateur de données de démo
+│   └── 📄 scrape_woocommerce_demo.py → Scraper WooCommerce de démonstration
 │
 ├── 📂 dashboard/                   ← Interface utilisateur
 │   └── 📄 app.py                   → Dashboard Streamlit (BI + LLM + MCP)
