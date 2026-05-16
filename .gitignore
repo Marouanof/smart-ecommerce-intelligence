@@ -1,0 +1,33 @@
+# Environnement
+venv/
+.env
+*.env.local
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.so
+.Python
+.python-version
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+agents/logs/
+
+# Notebooks (si présents)
+.ipynb_checkpoints/
+
+# Binaires
+*.exe
+*.dll
+*.msi

@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  preprocessing:
+    build:
+      context: ../.
+      dockerfile: docker/preprocessing/Dockerfile
+    volumes:
+      - ../data:/app/data
+      - ../TopKselection/output:/app/TopKselection/output
+
+  scoring:
+    build:
+      context: ../.
+      dockerfile: docker/scoring/Dockerfile
+    volumes:
+      - ../data:/app/data
+      - ../TopKselection/output:/app/TopKselection/output
+    depends_on:
+      preprocessing:
+        condition: service_completed_successfully
+
+  supervised:
+    build:
+      context: ../.
+      dockerfile: docker/supervised/Dockerfile
+    volumes:
+      - ../data:/app/data
+      - ../TopKselection:/app/TopKselection
+    depends_on:
+      scoring:
+        condition: service_completed_successfully
+
+  clustering:
+    build:
+      context: ../.
+      dockerfile: docker/clustering/Dockerfile
+    volumes:
+      - ../data:/app/data
+      - ../TopKselection/output:/app/TopKselection/output
+    depends_on:
+      scoring:
+        condition: service_completed_successfully
+
+  association:
+    build:
+      context: ../.
+      dockerfile: docker/association/Dockerfile
+    volumes:
+      - ../data:/app/data
+      - ../TopKselection/output:/app/TopKselection/output
+    depends_on:
+      clustering:
+        condition: service_completed_successfully
+
+  dashboard:
+    build:
+      context: ../.
+      dockerfile: docker/dashboard/Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../data:/app/data
+      - ../TopKselection/output:/app/TopKselection/output
+      - ../.env:/app/.env
+    depends_on:
+      association:
+        condition: service_completed_successfully

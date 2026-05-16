@@ -1,0 +1,90 @@
+name: Kubeflow Pipeline CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "TopKselection/**"
+      - "kfp_pipeline.py"
+      - "requirements.txt"
+  pull_request:
+    branches: [main]
+    paths:
+      - "TopKselection/**"
+      - "kfp_pipeline.py"
+      - "requirements.txt"
+
+env:
+  PYTHON_VERSION: "3.10"
+  PIPELINE_FILE: kfp_pipeline.py
+  PIPELINE_YAML: kfp_pipeline.yaml
+
+jobs:
+  compile-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install kfp SDK
+        run: |
+          python -m pip install --upgrade pip
+          pip install kfp
+
+      - name: Compile Kubeflow pipeline
+        run: |
+          echo "Compilation du pipeline KFP..."
+          python "${{ env.PIPELINE_FILE }}"
+          echo "Pipeline compile avec succes: ${{ env.PIPELINE_YAML }}"
+
+      - name: Upload pipeline artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kfp-pipeline-yaml
+          path: ${{ env.PIPELINE_YAML }}
+          retention-days: 30
+
+      - name: Validate YAML structure
+        run: |
+          python -c "
+          import yaml
+          with open('${{ env.PIPELINE_YAML }}') as f:
+              data = yaml.safe_load(f)
+          required_keys = ['components', 'deploymentSpec', 'pipelineInfo', 'root', 'schemaVersion']
+          for key in required_keys:
+              assert key in data, f'Clef manquante: {key}'
+          print(f'Validation OK — {len(data[\"components\"])} composants trouves')
+          for name in data['components']:
+              print(f'  - {name}')
+          "
+
+  deploy-kubeflow:
+    runs-on: ubuntu-latest
+    needs: compile-pipeline
+    if: github.ref == 'refs/heads/main' && false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download pipeline artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kfp-pipeline-yaml
+
+      - name: Deploy to Kubeflow
+        env:
+          KUBEFLOW_HOST: ${{ secrets.KUBEFLOW_HOST }}
+          KUBEFLOW_NAMESPACE: ${{ secrets.KUBEFLOW_NAMESPACE }}
+          KUBEFLOW_USERNAME: ${{ secrets.KUBEFLOW_USERNAME }}
+          KUBEFLOW_PASSWORD: ${{ secrets.KUBEFLOW_PASSWORD }}
+        run: |
+          echo "Deploiement Kubeflow desactive par defaut."
+          echo "Pour activer: retirer '&& false' de la condition et definir les secrets."
+          echo "Commandes de deploiement (a decommenter):"
+          echo "  # pip install kfp-server-api"
+          echo "  # python -c \"from kfp import Client; client=Client(host='\$KUBEFLOW_HOST'); client.upload_pipeline_version(pipeline_package_path='${{ env.PIPELINE_YAML }}', pipeline_name='smart-ecommerce-ml-pipeline')\""

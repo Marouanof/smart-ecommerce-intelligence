@@ -1,0 +1,153 @@
+# PIPELINE DEFINITION
+# Name: smart-ecommerce-ml-pipeline
+# Description: Pipeline ML pour le scoring, clustering et analyse de produits e-commerce
+# Inputs:
+#    random_state: int [Default: 42.0]
+#    test_size: float [Default: 0.3]
+#    top_k: int [Default: 100.0]
+components:
+  comp-association-rules:
+    executorLabel: exec-association-rules
+  comp-clustering:
+    executorLabel: exec-clustering
+  comp-dashboard:
+    executorLabel: exec-dashboard
+  comp-preprocessing:
+    executorLabel: exec-preprocessing
+  comp-scoring:
+    executorLabel: exec-scoring
+  comp-supervised:
+    executorLabel: exec-supervised
+    inputDefinitions:
+      parameters:
+        top_k:
+          parameterType: NUMBER_INTEGER
+deploymentSpec:
+  executors:
+    exec-association-rules:
+      container:
+        args:
+        - pip install --no-cache-dir pandas numpy mlxtend && python -m TopKselection.association_rules
+        command:
+        - sh
+        - -c
+        image: python:3.10-slim
+    exec-clustering:
+      container:
+        args:
+        - pip install --no-cache-dir pandas numpy scikit-learn matplotlib seaborn
+          && python -m TopKselection.clustering
+        command:
+        - sh
+        - -c
+        image: python:3.10-slim
+    exec-dashboard:
+      container:
+        args:
+        - pip install --no-cache-dir pandas numpy scikit-learn matplotlib seaborn
+          streamlit plotly httpx python-dotenv && streamlit run dashboard/app.py --server.port=8501
+          --server.address=0.0.0.0
+        command:
+        - sh
+        - -c
+        image: python:3.10-slim
+    exec-preprocessing:
+      container:
+        args:
+        - pip install --no-cache-dir pandas numpy scikit-learn python-dotenv requests
+          beautifulsoup4 && python -m TopKselection.preprocessing
+        command:
+        - sh
+        - -c
+        image: python:3.10-slim
+    exec-scoring:
+      container:
+        args:
+        - pip install --no-cache-dir pandas numpy scikit-learn && python -m TopKselection.scoring
+        command:
+        - sh
+        - -c
+        image: python:3.10-slim
+    exec-supervised:
+      container:
+        args:
+        - pip install --no-cache-dir pandas numpy scikit-learn xgboost joblib && PCT=$(python
+          -c "import sys; k=int(sys.argv[1]); print(k//5)" $0) && python -m TopKselection.supervised
+          --top-percentile=$PCT
+        - '{{$.inputs.parameters[''top_k'']}}'
+        command:
+        - sh
+        - -c
+        image: python:3.10-slim
+pipelineInfo:
+  description: Pipeline ML pour le scoring, clustering et analyse de produits e-commerce
+  name: smart-ecommerce-ml-pipeline
+root:
+  dag:
+    tasks:
+      association-rules:
+        cachingOptions: {}
+        componentRef:
+          name: comp-association-rules
+        dependentTasks:
+        - clustering
+        taskInfo:
+          name: association-rules
+      clustering:
+        cachingOptions: {}
+        componentRef:
+          name: comp-clustering
+        dependentTasks:
+        - scoring
+        taskInfo:
+          name: clustering
+      dashboard:
+        cachingOptions: {}
+        componentRef:
+          name: comp-dashboard
+        dependentTasks:
+        - association-rules
+        taskInfo:
+          name: dashboard
+      preprocessing:
+        cachingOptions: {}
+        componentRef:
+          name: comp-preprocessing
+        taskInfo:
+          name: preprocessing
+      scoring:
+        cachingOptions: {}
+        componentRef:
+          name: comp-scoring
+        dependentTasks:
+        - preprocessing
+        taskInfo:
+          name: scoring
+      supervised:
+        cachingOptions: {}
+        componentRef:
+          name: comp-supervised
+        dependentTasks:
+        - scoring
+        inputs:
+          parameters:
+            top_k:
+              componentInputParameter: top_k
+        taskInfo:
+          name: supervised
+  inputDefinitions:
+    parameters:
+      random_state:
+        defaultValue: 42.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      test_size:
+        defaultValue: 0.3
+        isOptional: true
+        parameterType: NUMBER_DOUBLE
+      top_k:
+        defaultValue: 100.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.1

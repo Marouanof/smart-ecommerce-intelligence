@@ -1,0 +1,58 @@
+{
+  "roles": {
+    "viewer": {
+      "description": "Consultation seule des donnees",
+      "tools": ["search_products", "get_top_k", "get_cluster_analysis", "get_product_stats"]
+    },
+    "analyst": {
+      "description": "Analyse + export",
+      "tools": ["search_products", "get_top_k", "get_cluster_analysis", "get_product_stats", "get_association_rules", "export_data"]
+    },
+    "admin": {
+      "description": "Acces complet dont pipeline",
+      "tools": ["search_products", "get_top_k", "get_cluster_analysis", "get_product_stats", "get_association_rules", "export_data", "run_pipeline", "manage_permissions"]
+    }
+  },
+  "tools": {
+    "search_products": {
+      "description": "Rechercher des produits par nom, categorie, fourchette de prix",
+      "input_schema": {"query": "string", "category": "string", "price_min": "number", "price_max": "number", "limit": "number"},
+      "requires_logging": true
+    },
+    "get_top_k": {
+      "description": "Retourne le Top-K produits classes par score composite",
+      "input_schema": {"k": "number"},
+      "requires_logging": true
+    },
+    "get_cluster_analysis": {
+      "description": "Analyse des clusters KMeans avec interpretations",
+      "input_schema": {},
+      "requires_logging": false
+    },
+    "get_product_stats": {
+      "description": "Statistiques globales du catalogue (moyennes, distributions)",
+      "input_schema": {},
+      "requires_logging": false
+    },
+    "get_association_rules": {
+      "description": "Regles d'association Apriori",
+      "input_schema": {"min_lift": "number"},
+      "requires_logging": true
+    },
+    "export_data": {
+      "description": "Exporter les donnees filtrees en CSV",
+      "input_schema": {"format": "string"},
+      "requires_logging": true
+    },
+    "run_pipeline": {
+      "description": "Relancer le pipeline ML complet",
+      "input_schema": {"skip_preprocessing": "boolean"},
+      "requires_logging": true
+    },
+    "manage_permissions": {
+      "description": "Gerer les permissions des utilisateurs",
+      "input_schema": {"action": "string", "role": "string", "tool": "string"},
+      "requires_logging": true
+    }
+  }
+}
