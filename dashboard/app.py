@@ -63,7 +63,7 @@ def derive_country(source_file: str) -> str:
     if pd.isna(source_file):
         return "Unknown"
     sf = str(source_file).lower()
-    if "shopify" in sf:
+    if "shopify" in sf or "aggregated" in sf:
         return "United States"
     elif "woocommerce" in sf:
         return "United Kingdom"
@@ -178,20 +178,20 @@ def render_viz_tab(df: pd.DataFrame, df_topk: pd.DataFrame):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("**Prix vs Rating (Top-K)**")
-        if "price" in df_topk.columns and "rating" in df_topk.columns:
+        st.markdown("**Prix vs Avis (Top-K)**")
+        if "price" in df_topk.columns and "review_count" in df_topk.columns:
             fig_scatter = px.scatter(
-                df_topk.dropna(subset=["price", "rating"]),
+                df_topk.dropna(subset=["price", "review_count"]),
                 x="price",
-                y="rating",
+                y="review_count",
                 color="category" if "category" in df_topk.columns else None,
                 size="composite_score" if "composite_score" in df_topk.columns else None,
-                hover_data=["title"],
-                title="Prix vs Rating",
+                hover_data=["title", "rating"],
+                title="Prix vs Nombre d'avis",
             )
             st.plotly_chart(fig_scatter, use_container_width=True)
         else:
-            st.info("Colonnes prix/rating indisponibles")
+            st.info("Colonnes prix/review_count indisponibles")
 
     with col2:
         st.markdown("**Score composite par Cluster**")
@@ -229,6 +229,8 @@ def render_viz_tab(df: pd.DataFrame, df_topk: pd.DataFrame):
         st.markdown("**Repartition par plateforme**")
         if "platform" in df.columns:
             plat_counts = df["platform"].value_counts()
+            platform_name_map = {"shopify": "Shopify", "woocommerce": "WooCommerce"}
+            plat_counts.index = plat_counts.index.map(platform_name_map)
             fig_pie = px.pie(
                 values=plat_counts.values,
                 names=plat_counts.index,
@@ -242,16 +244,19 @@ def render_viz_tab(df: pd.DataFrame, df_topk: pd.DataFrame):
     df_map = df.copy()
     if "_source_file" in df_map.columns:
         df_map["country"] = df_map["_source_file"].apply(derive_country)
+        country_iso_map = {"United States": "USA", "United Kingdom": "GBR"}
         country_stats = (
             df_map.groupby("country")
             .agg(produits=("product_id", "count"), score_moyen=("composite_score", "mean"))
             .reset_index()
         )
+        country_stats["iso"] = country_stats["country"].map(country_iso_map)
+        country_stats_map = country_stats.dropna(subset=["iso"])
         try:
             fig_map = px.choropleth(
-                country_stats,
-                locations="country",
-                locationmode="country names",
+                country_stats_map,
+                locations="iso",
+                locationmode="ISO-3",
                 color="produits",
                 hover_name="country",
                 hover_data={"score_moyen": ":.2f", "produits": True},
